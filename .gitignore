@@ -116,3 +116,9 @@ live_screenshot*.png
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# 해봄 artemis 서버
+relay/.env
+relay/logs/
+relay/work/
+runs/

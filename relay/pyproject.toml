@@ -1,0 +1,19 @@
+[project]
+name = "android-guide"
+version = "0.1.0"
+description = "Environment of the Haebom artemis server (relay/). The name is kept so that uv.lock stays valid."
+requires-python = ">=3.12"
+dependencies = [
+    # google/artemis (Apache-2.0): the relay imports its observation, prompts and summarizer as they are
+    "artemis",
+    "artemis-client",
+    # Claude (Messages API) for the relay's "haiku" profile
+    "anthropic>=1.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+artemis = { git = "https://github.com/google/artemis", rev = "351ca8422f7b5b54e80a9c1ce03a222e02415b6b" }
+artemis-client = { git = "https://github.com/google/artemis", rev = "351ca8422f7b5b54e80a9c1ce03a222e02415b6b", subdirectory = "packages/artemis-client" }

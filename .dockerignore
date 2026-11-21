@@ -13,3 +13,11 @@ dist
 traces
 .env
 *.log
+
+# 해봄 artemis 서버: 키와 기록은 이미지에 넣지 않는다
+relay/.env
+**/.env
+relay/logs
+relay/work
+runs
+bench/workloads

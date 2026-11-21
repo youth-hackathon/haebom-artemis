@@ -28,6 +28,14 @@ services:
       GUIDE_JEV_DESIGN: ${GUIDE_JEV_DESIGN:-split}
       GUIDE_JEV_MODEL: ${GUIDE_JEV_MODEL:-typesafe/jev-1.14}
       GUIDE_JEV_BOX: ${GUIDE_JEV_BOX:-off}
+      # jev 방식에서 Jev에 묻지 않고 LLM이 답하는 때: 첫 단계, 지나온 화면이 다시 나올 때, Jev가 이만큼 이어서 답한 뒤(0이면 안 함)
+      GUIDE_JEV_LLM_START: ${GUIDE_JEV_LLM_START:-on}
+      GUIDE_JEV_LLM_REPEAT: ${GUIDE_JEV_LLM_REPEAT:-on}
+      GUIDE_JEV_CHECK_EVERY: ${GUIDE_JEV_CHECK_EVERY:-3}
+      # 끝났다고 말하는 쪽: llm(Jev가 "끝남"이라고 하면 LLM이 그 단계를 답함) 또는 jev
+      GUIDE_JEV_DONE: ${GUIDE_JEV_DONE:-llm}
+      # 폰에 대한 설명(깔린 앱, 안 되는 일)을 LLM의 지시문에 붙일 글 파일. 비우면 붙이지 않는다
+      GUIDE_ENVIRONMENT_FILE: ${GUIDE_ENVIRONMENT_FILE:-}
       # 모델 호출 하나를 기다리는 시간(초). 끊기거나 넘기면 한 번 더 부른다. 앱은 응답을 120초까지 기다린다
       GUIDE_CLI_TIMEOUT: ${GUIDE_CLI_TIMEOUT:-55}
       # 단계 요약을 동시에 몇 개까지 만드는지. artemis의 값은 2다

@@ -65,6 +65,9 @@ if DESIGN not in ("one", "split"):
     raise SystemExit(f"GUIDE_JEV_DESIGN={DESIGN!r}: one or split")
 SPLIT_MIN_CONF = float(os.environ.get("GUIDE_JEV_SPLIT_MIN_CONF", "0"))
 LISTED_MIN, GOAL_MIN = 0.7, 0.9
+# Who says the task is done. llm (default): when Jev's answer is "done", the LLM answers that step (it reports the task
+# complete, or says what is left). jev: Jev reports it when its goal_met is at least GOAL_MIN.
+DONE_BY = os.environ.get("GUIDE_JEV_DONE", "llm")
 # split design, type 3: when the place to tap is not in the element list, Jev also points at it on the screenshot (a
 # `box` question, Jev 1.14), and that point is used when the box's confidence reaches BOX_MIN; otherwise the LLM answers
 BOX = os.environ.get("GUIDE_JEV_BOX", "off") == "on"
@@ -423,7 +426,9 @@ def decide_split(answers: dict, crit: dict[str, str], elements: list[dict], even
     elif kc < c:
         why = "low_conf_kind"
     elif kind == "done":
-        if (goal or 0) >= GOAL_MIN:
+        if DONE_BY == "llm":
+            why = "done_is_for_the_llm"
+        elif (goal or 0) >= GOAL_MIN:
             action, explain = action_for("done", elements)
         else:
             why = "goal_not_met"

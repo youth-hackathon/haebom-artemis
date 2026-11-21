@@ -83,6 +83,34 @@ MAX_INNER_ROUNDS = 3  # explorer / invalid-index loops answered without a round 
 #   jev  TypeSafe Jev picks the next action among the screen's options (relay/jev.py). Jev also says whether the step
 #        needs typing; such a step goes to the baseline (GUIDE_JEV_FALLBACK=baseline) or Jev answers it anyway (none)
 MODES = ("baseline", "jev")
+# In the jev mode some steps always go to the LLM, whatever Jev would choose. Jev sees one screen and no history: it
+# cannot tell a goal reached from a screen to tap through, cannot say a task is impossible here, and repeats itself when
+# a screen comes back. So the LLM (which has the history) answers
+#   - the first step of a task (it also says when the task cannot be done on this phone; GUIDE_ENVIRONMENT_FILE)
+#   - a step on a screen this session has already been on (Jev went round in a circle)
+#   - after GUIDE_JEV_CHECK_EVERY steps in a row answered by Jev (is the task done by now?)
+#   - a step for which Jev's answer is "done" (relay/jev.py): the LLM decides that the task is complete
+JEV_LLM_START = os.environ.get("GUIDE_JEV_LLM_START", "on") != "off"
+JEV_LLM_REPEAT = os.environ.get("GUIDE_JEV_LLM_REPEAT", "on") != "off"
+JEV_CHECK_EVERY = int(os.environ.get("GUIDE_JEV_CHECK_EVERY", "3"))  # 0: never for this reason
+# What the phone has and cannot do, for the LLM's prompt (a text file; empty or unset: nothing is added). The demo puts
+# the Cuttlefish's installed apps there, so that a task needing an app that is not there is turned down at once.
+ENVIRONMENT_FILE = os.environ.get("GUIDE_ENVIRONMENT_FILE", "")
+ENVIRONMENT = ""
+if ENVIRONMENT_FILE:
+    try:
+        ENVIRONMENT = Path(ENVIRONMENT_FILE).read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        raise SystemExit(f"GUIDE_ENVIRONMENT_FILE={ENVIRONMENT_FILE!r}: {exc}")
+
+
+def screen_key(package: str, elements_text: str) -> str:
+    """The same screen gives the same key: the app and the listed elements, without their positions."""
+    return package + "\n" + re.sub(r"\s*\|\s*(Bounds|Point):.*", "", elements_text)
+
+
+def with_environment(system: str) -> str:
+    return system if not ENVIRONMENT else system.rstrip() + "\n\n---\n\n# 10. THIS PHONE\n" + ENVIRONMENT + "\n"
 DEFAULT_MODE = os.environ.get("GUIDE_MODE", "baseline")
 if DEFAULT_MODE not in MODES:
     raise SystemExit(f"GUIDE_MODE={DEFAULT_MODE!r}: one of {list(MODES)}")
@@ -382,7 +410,7 @@ def guide_next(req: dict, trace: dict | None = None) -> tuple[int, dict]:
         with _lock:
             session = _sessions.setdefault(sid, {"task": req.get("task", ""), "turns": [], "user_notes": []})
             if req.get("event") == "start":
-                session.update(task=req.get("task", session["task"]), turns=[], user_notes=[])
+                session.update(task=req.get("task", session["task"]), turns=[], user_notes=[], seen=[], jev_run=0)
             if req.get("event") == "user_message":
                 session["user_notes"].append(req.get("event_detail", ""))
             forced = (replay or {}).get("previous")
@@ -395,7 +423,7 @@ def guide_next(req: dict, trace: dict | None = None) -> tuple[int, dict]:
                 _pending_by_session[sid] = _pending_by_session.get(sid, 0) + 1
                 _summary_pool.submit(_summarize, sid, prev, current["screenshot_b64"], session["task"], replay is None)
             goal = session["task"]
-        system = ab.system_prompt(goal)
+        system = with_environment(ab.system_prompt(goal))
 
     first_prompt = None
     metas: list[dict] = []    # planner calls of this turn
@@ -404,7 +432,19 @@ def guide_next(req: dict, trace: dict | None = None) -> tuple[int, dict]:
     out = None
     jev_info = None  # mode jev: what Jev chose this turn and whether it was used
     decided = None   # mode jev: (out, action, resolved) when Jev's choice answers the request
-    if mode == "jev":
+    key = screen_key(screen.get("package", ""), elements_text)
+    to_llm = ""  # mode jev: why this step goes to the LLM without asking Jev
+    if mode == "jev" and session is not None:
+        with _lock:
+            if JEV_LLM_START and current["event"] == "start":
+                to_llm = "first_step"
+            elif JEV_LLM_REPEAT and key in session.get("seen", []):
+                to_llm = "screen_seen_before"
+            elif JEV_CHECK_EVERY and session.get("jev_run", 0) >= JEV_CHECK_EVERY:
+                to_llm = "check_progress"
+        if to_llm:
+            jev_info = {"route": "llm", "route_reason": to_llm, "used": False}
+    if mode == "jev" and not to_llm:
         if session is not None:
             with _lock:
                 turns, goal = [dict(t) for t in session["turns"]], session["task"]
@@ -479,6 +519,8 @@ def guide_next(req: dict, trace: dict | None = None) -> tuple[int, dict]:
                 "screenshot_b64": current["screenshot_b64"], "explorer": current["explorer"],
                 "width": width, "height": height,
             })
+            session.setdefault("seen", []).append(key)
+            session["jev_run"] = session.get("jev_run", 0) + 1 if (jev_info or {}).get("used") else 0
     used = [backends.tokens(m) for m in metas + helpers]
     meta = {"rounds": len(metas), "latency_s": round(sum(m["latency_s"] for m in metas + helpers), 2),
             "cost_usd": round(sum((m.get("cost_usd") or 0) for m in metas), 5), "elements": len(elements),

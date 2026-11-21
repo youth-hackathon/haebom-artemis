@@ -1,0 +1,655 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title data-keep>Jev 채택 발표</title>
+<meta name="claude:viewport-fit-sides" content="cover" data-keep>
+<link rel="preconnect" href="https://fonts.googleapis.com" data-keep>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" data-keep>
+<style data-keep>
+/* 레이아웃: 1280x720 슬라이드를 화면에 맞춰 줄여 보여 준다. 발표 화면(한 장씩)과 모아 보기·편집 화면 두 가지. 파랑은 Jev, 주황은 LLM */
+:root{
+  --bg:#f3f5f8; --deck-bg:#e3e8ef; --surface:#ffffff; --surface-2:#eef1f5; --ink:#141920; --ink-2:#47505b; --ink-3:#727c88; --line:#d9dfe6;
+  --jev:#2a78d6; --jev-soft:#e4eefb; --llm:#eb6834; --llm-soft:#fdece3; --bad:#c93a3a; --ok:#c7d1dc;
+  --font-display:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101318; --deck-bg:#0a0c10; --surface:#181c22; --surface-2:#20252c; --ink:#eef1f4; --ink-2:#b8c0c9; --ink-3:#8a94a0; --line:#2d343d;
+    --jev:#3987e5; --jev-soft:#17273b; --llm:#d95926; --llm-soft:#35211a; --bad:#e66767; --ok:#3b444f; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101318; --deck-bg:#0a0c10; --surface:#181c22; --surface-2:#20252c; --ink:#eef1f4; --ink-2:#b8c0c9; --ink-3:#8a94a0; --line:#2d343d;
+  --jev:#3987e5; --jev-soft:#17273b; --llm:#d95926; --llm-soft:#35211a; --bad:#e66767; --ok:#3b444f; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.6;margin:0;-webkit-font-smoothing:antialiased}
+body.deck-mode{background:var(--deck-bg);overflow:hidden}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 12px;font:inherit;font-size:0.88rem;font-weight:500;cursor:pointer;line-height:1.3;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn.quiet{border-color:transparent;background:transparent;color:var(--ink-2);padding:6px 8px}
+.btn.quiet:hover{color:var(--ink);background:var(--surface-2)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn[disabled]{opacity:0.45;cursor:default}
+.btn:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--jev);outline-offset:2px}
+code{font-family:var(--font-mono);font-size:0.86em;background:var(--surface-2);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere}
+
+/* ---------- 슬라이드 (설계 크기 1280x720) ---------- */
+.fit{position:relative;flex:none}
+.stage{position:absolute;top:0;left:0;width:1280px;height:720px;transform-origin:top left;background:var(--surface);color:var(--ink);padding:52px 68px 38px;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:26px;overflow:hidden;border-radius:4px}
+.s-kick{font-size:15px;font-weight:600;color:var(--ink-3);letter-spacing:0.03em;display:flex;gap:10px;align-items:center}
+.s-tag{font-family:var(--font-mono);font-weight:500;color:var(--jev);letter-spacing:0}
+.s-title{font-family:var(--font-display);font-weight:700;font-size:36px;line-height:1.28;margin:6px 0 0;letter-spacing:-0.015em;text-wrap:balance}
+.s-lead{font-size:21px;color:var(--ink-2);margin:10px 0 0;max-width:46em;line-height:1.5}
+.s-edited{font-size:13px;color:var(--ink-3);margin-top:6px}
+.s-body{min-height:0;overflow:hidden;display:grid;gap:44px;align-items:start}
+.l-split .s-body{grid-template-columns:minmax(0,1fr) minmax(0,1.12fr)}
+.l-summary .s-body{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+.l-wide .s-body,.l-text .s-body{grid-template-columns:minmax(0,1fr);gap:24px;align-content:start}
+.l-cover{padding:64px 72px 40px}
+.l-cover .s-title{font-size:54px;line-height:1.22;margin-top:14px}
+.l-cover .s-lead{font-size:23px;margin-top:18px}
+.l-cover .s-body{align-content:end}
+.s-foot{display:flex;justify-content:space-between;gap:24px;font-size:13px;color:var(--ink-3);border-top:1px solid var(--line);padding-top:12px}
+.s-foot .src{font-family:var(--font-mono);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.s-foot .pg{font-family:var(--font-mono);flex:none}
+.pts-wrap{display:grid;gap:14px;min-width:0}
+.pts-label{font-size:15px;font-weight:600;color:var(--ink-2);letter-spacing:0.02em}
+.pts{margin:0;padding:0;list-style:none;display:grid;gap:14px;font-size:22px;line-height:1.5}
+.l-wide .pts{font-size:20px;gap:8px}
+.l-text .pts{font-size:26px;gap:18px;max-width:40em}
+.pts li{position:relative;padding-left:1.15em}
+.pts li::before{content:"";position:absolute;left:0.1em;top:0.58em;width:0.42em;height:0.42em;border-radius:50%;border:2px solid var(--ink-3)}
+.pts li.add::before{border-color:var(--jev);background:var(--jev-soft)}
+.pts .who{font-size:0.62em;font-weight:600;color:var(--jev);margin-left:0.5em;font-family:var(--font-body);white-space:nowrap}
+.viz{min-width:0;display:grid;gap:14px;align-content:start}
+.viz-title{font-size:15px;font-weight:600;color:var(--ink-2);letter-spacing:0.01em}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:14px;color:var(--ink-2);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+.sw.jev,.bar.jev,.seg.jev{background:var(--jev)}
+.sw.llm,.bar.llm,.seg.llm{background:var(--llm)}
+
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.tile{border:1px solid var(--line);border-radius:14px;padding:20px 24px;display:grid;gap:6px;align-content:start}
+.tile .k{font-size:16px;color:var(--ink-2);font-weight:600}
+.tile .v{font-family:var(--font-display);font-weight:700;font-size:40px;font-variant-numeric:tabular-nums;letter-spacing:-0.015em;line-height:1.2}
+.tile .v .from{display:block;color:var(--ink-3);font-weight:500;font-size:0.6em;line-height:1.3}
+.tile .s{font-size:16px;color:var(--ink-2)}
+
+.chart{margin:0;display:grid;gap:8px;min-width:0}
+.plot{position:relative;height:var(--ph,150px);margin-left:40px}
+.gl{position:absolute;left:0;right:0;border-top:1px dashed var(--line)}
+.gl span{position:absolute;left:-40px;top:-0.55em;font-family:var(--font-mono);font-size:12px;color:var(--ink-3);line-height:1}
+.base{position:absolute;left:0;right:0;bottom:0;border-top:1px solid var(--ink-3)}
+.bars{position:absolute;inset:0;display:grid;grid-template-columns:repeat(55,minmax(0,1fr));column-gap:2px}
+.col{display:flex;align-items:flex-end;height:100%}
+.col:hover .bar{filter:brightness(1.15)}
+.bar{width:100%;border-radius:3px 3px 0 0}
+.gnames{margin-left:40px;display:grid;grid-template-columns:repeat(55,minmax(0,1fr));column-gap:2px}
+.gname{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--line);padding-top:3px;margin-right:3px}
+
+.hchart{display:grid;gap:8px}
+.hrow{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;align-items:center}
+.hlab{font-size:15px;color:var(--ink-2);white-space:nowrap}
+.htrack{display:flex;align-items:center;gap:10px;min-width:0}
+.hbar{display:flex;gap:2px;height:22px;min-width:4px}
+.seg{height:100%}
+.seg:last-child{border-radius:0 4px 4px 0}
+.hval{font-family:var(--font-mono);font-size:15px;white-space:nowrap;color:var(--ink);font-variant-numeric:tabular-nums}
+.note-line{font-size:16px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:10px}
+.note-line b{font-family:var(--font-mono);color:var(--ink);font-weight:500}
+
+.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ans{border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;display:grid;gap:10px;align-content:start;min-width:0}
+.ans.jevc{border-color:var(--jev)}
+.ans.llmc{border-color:var(--llm)}
+.ans-head{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:18px;align-items:center}
+.ans-head .who2{display:inline-flex;align-items:center;gap:8px}
+.sec{font-family:var(--font-mono);font-weight:500;font-size:22px;font-variant-numeric:tabular-nums}
+.ans-k{font-size:15px;color:var(--ink-2)}
+.ans pre{margin:0;font-family:var(--font-mono);font-size:14px;background:var(--surface-2);border-radius:8px;padding:10px 12px;overflow:hidden;line-height:1.5;white-space:pre}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;margin:0;font-size:16px}
+.kv dt{color:var(--ink-2)}
+.kv dd{margin:0;font-weight:600}
+
+.flow{display:grid;gap:14px}
+.lane{display:grid;gap:10px;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.lane-name{font-family:var(--font-mono);font-size:13px;color:var(--ink-3)}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.node{border:1.5px solid var(--line);border-radius:9px;padding:7px 12px;font-size:17px;background:var(--surface);display:grid;line-height:1.3;font-weight:500}
+.node small{font-size:13px;color:var(--ink-2);font-family:var(--font-mono);font-weight:400}
+.node.jev{border-color:var(--jev);background:var(--jev-soft)}
+.node.llm{border-color:var(--llm);background:var(--llm-soft)}
+.arr{color:var(--ink-3);font-size:17px}
+.branch{display:grid;gap:10px;padding-left:18px;border-left:2px solid var(--line);margin-left:10px}
+.br{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15px;color:var(--ink-2)}
+.br-k{font-weight:600;font-size:14px;min-width:4.4em;color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-left:calc(4.4em + 8px)}
+.chip{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--ink-2);background:var(--surface)}
+.chip b{font-family:var(--font-mono);color:var(--ink);font-weight:500;margin-left:4px}
+
+.acc-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.acc-tiles .tile{padding:14px 18px}
+.acc-tiles .tile .v{font-size:34px}
+.acc-tiles .tile.jev-t{border-color:var(--jev)}
+.acc-scroll{min-width:0}
+.acc{display:grid;grid-template-columns:96px repeat(47,minmax(0,1fr));gap:4px;align-items:center}
+.rl{font-size:14px;color:var(--ink-2);white-space:nowrap}
+.cell{height:22px;border-radius:3px;background:var(--ok);display:grid;place-items:center;font-size:13px;font-weight:700;line-height:1}
+.cell.bad{background:var(--bad);color:var(--surface)}
+.cell.bad::after{content:"×"}
+.cell.lg{width:18px;height:18px}
+
+.results{display:grid;gap:16px}
+.res{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 18px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px}
+.res-k{font-size:18px;font-weight:600;color:var(--ink-2)}
+.res-v{font-family:var(--font-display);font-size:38px;font-weight:700;letter-spacing:-0.015em;font-variant-numeric:tabular-nums;line-height:1.2}
+.res-v .from{color:var(--ink-3);font-weight:500}
+.res-s{grid-column:2;font-size:16px;color:var(--ink-2)}
+
+/* ---------- 발표 화면 ---------- */
+.deck{position:fixed;inset:0;display:grid;grid-template-rows:minmax(0,1fr) auto;padding-top:env(safe-area-inset-top,0px)}
+.deck-area{min-height:0;display:flex;align-items:center;justify-content:center;padding:20px max(20px,env(safe-area-inset-right,0px)) 12px max(20px,env(safe-area-inset-left,0px));overflow:hidden}
+.deck-area .stage{box-shadow:0 10px 40px rgba(10,14,20,0.18)}
+.dnav{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;padding:8px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.pcount{font-family:var(--font-mono);font-size:0.9rem;color:var(--ink-2);min-width:4.5em;text-align:center}
+.dnav .btn{background:var(--surface)}
+.dnav .btn.quiet{background:transparent}
+
+/* ---------- 모아 보기·편집 화면 ---------- */
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 72px;display:grid;gap:26px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+.eyebrow{font-size:0.78rem;font-weight:600;color:var(--ink-3);letter-spacing:0.04em}
+.top h1{font-family:var(--font-display);font-size:clamp(1.4rem,2.8vw,1.85rem);font-weight:700;margin:2px 0 0;letter-spacing:-0.01em;line-height:1.3}
+.top p{margin:6px 0 0;color:var(--ink-2);max-width:62ch;font-size:0.95rem}
+.tag{font-family:var(--font-mono);font-size:0.8rem;color:var(--jev)}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.card{display:grid;gap:14px;min-width:0}
+.card-frame{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface)}
+.card-frame .fit{margin:0}
+.card-meta{display:grid;gap:12px}
+.notes summary,details.tv summary{cursor:pointer;color:var(--ink-2);font-size:0.88rem;font-weight:500}
+.notes p{margin:8px 0 0;color:var(--ink-2);max-width:66ch;font-size:0.95rem}
+.tbl{border-collapse:collapse;width:100%;font-size:0.86rem;font-variant-numeric:tabular-nums;margin-top:8px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.tbl th{font-weight:600;color:var(--ink-2);font-size:0.8rem}
+.tbl .num{text-align:right;font-family:var(--font-mono)}
+.tbl-scroll{overflow-x:auto}
+.adds{display:grid;gap:6px}
+.add-item{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:0.92rem;color:var(--ink-2)}
+.add-item b{color:var(--ink);font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px solid var(--line);padding-top:12px}
+.actions .spacer{flex:1}
+.confirm{display:inline-flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:0.9rem;color:var(--ink-2)}
+.form{display:grid;gap:10px;border:1px dashed var(--ink-3);border-radius:12px;padding:16px;background:var(--surface-2)}
+.form label{display:grid;gap:4px;font-size:0.84rem;color:var(--ink-2);font-weight:500}
+.form input,.form textarea{font:inherit;font-size:0.95rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.form textarea{min-height:96px;resize:vertical;line-height:1.55}
+.form .row{display:flex;gap:8px;flex-wrap:wrap}
+.hint{font-size:0.8rem;color:var(--ink-3);font-weight:400}
+.newslide{display:grid;gap:12px}
+.newslide > .btn{justify-self:start}
+.toast{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(72px + env(safe-area-inset-bottom,0px));max-width:min(560px,calc(100vw - 32px));border-radius:10px;padding:10px 16px;font-size:0.92rem;border:1px solid var(--jev);background:var(--surface);color:var(--ink);box-shadow:0 6px 24px rgba(0,0,0,0.16)}
+.toast.warn{border-color:var(--llm);background:var(--llm-soft)}
+.tip{position:fixed;z-index:70;pointer-events:none;background:var(--ink);color:var(--surface);font-size:0.8rem;padding:6px 9px;border-radius:7px;max-width:260px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,0.18)}
+
+/* ---------- 좁은 화면: 슬라이드를 줄이지 않고 세로로 풀어 보여 준다 ---------- */
+@media (max-width:720px){
+  .fit{width:auto!important;height:auto!important}
+  .stage{position:static;transform:none!important;width:auto;height:auto;padding:24px 20px 18px!important;gap:18px;border-radius:0}
+  .s-title{font-size:23px}
+  .l-cover .s-title{font-size:30px}
+  .s-lead,.l-cover .s-lead{font-size:17px}
+  .s-body,.l-split .s-body,.l-summary .s-body{grid-template-columns:minmax(0,1fr)!important;gap:22px;overflow:visible}
+  .pts,.l-wide .pts,.l-text .pts{font-size:16px!important;gap:10px}
+  .tiles,.acc-tiles{grid-template-columns:minmax(0,1fr)}
+  .tile .v{font-size:28px}
+  .answers{grid-template-columns:minmax(0,1fr)}
+  .gnames{display:none}
+  .acc-scroll{overflow-x:auto}
+  .acc{min-width:620px}
+  .res-v{font-size:26px}
+  .res{grid-template-columns:minmax(0,1fr)}
+  .res-s{grid-column:1}
+  .s-foot .src{white-space:normal}
+  body.deck-mode{overflow:auto}
+  .deck{position:static;min-height:100dvh}
+  .deck-area{display:block;overflow:visible;padding:16px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+  .dnav{position:sticky;bottom:0;background:var(--deck-bg)}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+<div id="app"></div>
+<script type="application/json" id="deck-state">{"rev":1,"lastSave":"","slides":[
+{"id":"cover","by":"[claude]","kicker":"해커톤 발표 · 측정일 2026-11-21","layout":"cover","title":"누를 곳 고르기를 Jev에게 맡겼습니다","lead":"정확도는 그대로 두고, 판단 시간과 LLM 비용을 줄인 B 구성을 채택했습니다.","pointsLabel":"","points":[],"visual":"cover","src":"워크로드 8개, 55단계 · 채점 47단계","notes":"결론을 먼저 말합니다. 시간, 비용, 정확도 세 가지만 기억하면 됩니다. 숫자는 모두 2026-11-21에 같은 워크로드 8개(55단계)로 잰 값입니다.","addenda":[],"edited":[]},
+{"id":"problem","by":"[claude]","kicker":"기존 방식","layout":"split","title":"기존 방식은 단계마다 LLM이 답을 글로 씁니다","lead":"","pointsLabel":"","points":["사람이 자기 휴대폰에서 직접 누르고, 서버가 단계마다 다음에 누를 곳을 알려 줍니다.","기존 방식은 단계마다 LLM(`gemini-3.8-flash`)이 화면을 읽고 답을 글로 씁니다.","단계 하나에 3.2~30.6초, 55단계를 합치면 546초가 걸렸습니다.","그동안 사람은 휴대폰을 든 채 기다립니다."],"visual":"problem","src":"출처: runs/bench-baseline · 워크로드 8개, 55단계","notes":"벤치마크는 에뮬레이터에서 기록해 둔 화면을 서버에 다시 보내서 잽니다. 그래서 두 방식이 똑같은 화면을 보고 답합니다.","addenda":[],"edited":[]},
+{"id":"jev","by":"[claude]","kicker":"Jev 채택","layout":"split","title":"Jev는 글을 쓰지 않고 보기 중에서 고릅니다","lead":"","pointsLabel":"","points":["Jev(TypeSafe)는 보기 가운데 하나를 고르고, 보기마다 확률을 돌려주는 결정 모델입니다.","화면의 누를 수 있는 요소, 밀기 방향, 뒤로·홈 키가 그대로 보기가 됩니다.","글은 쓰지 못하므로, 글자 입력 같은 단계는 기존 LLM이 맡습니다."],"visual":"jev","src":"출처: runs/bench-baseline, runs/bench-jev-B-r3 1회차 · alarm-0730 7단계","notes":"오른쪽은 같은 단계에 두 방식이 낸 실제 답입니다. LLM은 답 전체를 글로 쓰고, Jev는 보기 하나를 고릅니다. Jev는 OpenRouter의 Decisions API로 typesafe/jev-1.14를 부릅니다.","addenda":[],"edited":[]},
+{"id":"flow","by":"[claude]","kicker":"기존 방식과 다른 점","layout":"split","title":"질문 7개에 한 번에 답하고, 규칙을 통과한 답만 씁니다","lead":"","pointsLabel":"","points":["한 요청에서 질문 7개에 답합니다: 단계 종류, 동작, 누를 요소, 목록에 있나, 밀기 방향, 키, 목표를 이뤘나.","누를 곳이 목록에 있을 확률 0.7 이상, 끝났을 확률 0.9 이상일 때만 Jev의 답을 씁니다.","글자 입력, 앱 이름으로 열기, 그 밖의 동작은 LLM이 답합니다.","기존 방식의 코드는 그대로 두었고, 요청마다 방식을 고를 수 있습니다."],"visual":"flow","src":"출처: relay/jev.py · LLM에 넘긴 이유는 runs/bench-jev-B-r3 1회차","notes":"직전 단계에서 앱이 링을 그리지 못한 경우에도 LLM이 답합니다. 질문 구성을 세 가지(A·B·C) 재 보았고, 그 가운데 B를 기본값으로 채택했습니다.","addenda":[],"edited":[]},
+{"id":"time","by":"[claude]","kicker":"시간 절약","layout":"split","title":"판단 시간 합계가 546초에서 215~258초로 줄었습니다","lead":"","pointsLabel":"","points":["Jev가 답한 34~35단계는 단계마다 0.42~0.59초 걸렸습니다.","LLM이 답한 20~21단계는 기존처럼 몇 초씩 걸립니다.","세 번 잰 합계는 215초, 258초, 224초로, 기존의 39~47%입니다."],"visual":"time","src":"출처: runs/bench-baseline, runs/bench-jev-B-r3 · B는 세 번 잼","notes":"파란색은 Jev가, 주황색은 LLM이 답하는 데 쓴 시간입니다. 남은 시간은 대부분 LLM이 맡은 단계에서 나옵니다. LLM에 넘긴 단계는 Jev를 먼저 부르는 약 0.5초만큼 기존보다 더 걸립니다.","addenda":[],"edited":[]},
+{"id":"cost","by":"[claude]","kicker":"비용 절약","layout":"split","title":"LLM 판단 비용이 회차마다 65~69% 줄었습니다","lead":"","pointsLabel":"","points":["LLM 판단 호출이 회차마다 57회에서 20~23회로 줄었습니다.","LLM 판단 비용은 0.374 unit에서 0.117~0.131 unit이 되었습니다.","새로 드는 Jev 비용은 회차 하나에 약 $0.014입니다."],"visual":"cost","src":"출처: runs/bench-baseline, runs/bench-jev-B-r3 · 회차 하나는 55단계","notes":"unit은 Letsur가 응답에 실어 주는 추정 비용의 단위입니다. 달러로 적힌 Jev 비용과는 단위가 달라서 더하지 않았습니다. 단계 요약(gemini-3.5-flash-lite) 비용은 두 방식 모두 회차마다 0.059 unit으로 같습니다.","addenda":[],"edited":[]},
+{"id":"accuracy","by":"[claude]","kicker":"정확도 유지","layout":"wide","title":"정답 수는 그대로입니다: 47단계 중 44단계","lead":"","pointsLabel":"","points":["기존 방식과 B 모두 채점한 47단계 가운데 44단계를 맞혔고, B는 세 번 재서 세 번 모두 44단계였습니다.","앱 기준: 앱이 링을 그리는 요소가 기록과 같으면 정답으로 셉니다."],"visual":"accuracy","src":"출처: runs/bench-baseline, runs/bench-jev-B-r3 · 서버 기록(relay/logs)의 답으로 앱 기준 판정","notes":"틀린 단계 가운데 data-saver 4단계는 두 방식이 모두 틀렸습니다. 나머지 틀린 단계는 B의 세 회차 사이에서도 맞고 틀림이 바뀌었습니다.","addenda":[],"edited":[]},
+{"id":"summary","by":"[claude]","kicker":"정리","layout":"summary","title":"정확도는 그대로, 시간과 비용은 줄었습니다","lead":"","pointsLabel":"다음에 할 일","points":["새로 기록한 워크로드로 다시 재기. 설정과 기준값을 이 47단계로 정했기 때문입니다.","Jev와 LLM을 동시에 출발시켜, LLM에 넘긴 단계의 0.5초 줄이기","누를 곳이 목록에 없는 단계 처리하기. 1회차 LLM 단계 20개 가운데 7개입니다."],"visual":"summary","src":"","notes":"","addenda":[],"edited":[]}
+]}</script>
+<script id="deck-code">
+(function () {
+  "use strict";
+  var RESET = ":root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}";
+  var STASH_KEY = "jev-deck-pending";
+  var W = 1280, H = 720;
+  /* 2026-11-21 측정값: runs/bench-baseline, runs/bench-jev-B-r3 (워크로드 8개, 55단계). ok는 앱 기준 판정 */
+  var D = {"steps":["alarm-0730:1","alarm-0730:2","alarm-0730:3","alarm-0730:4","alarm-0730:5","alarm-0730:6","alarm-0730:7","alarm-0730:8","alarm-0730:9","alarm-0730-again:1","alarm-0730-again:2","alarm-0730-again:3","alarm-0730-again:4","alarm-0730-again:5","alarm-0730-again:6","alarm-0730-again:7","alarm-0730-again:8","bluetooth:1","bluetooth:2","bluetooth:3","bluetooth:4","bluetooth:5","bluetooth:6","bluetooth-again:1","bluetooth-again:2","bluetooth-again:3","bluetooth-again:4","bluetooth-again:5","brightness:1","brightness:2","brightness:3","brightness:4","data-saver:1","data-saver:2","data-saver:3","data-saver:4","data-saver:5","data-saver:6","data-saver:7","data-saver:8","data-saver:9","data-saver:10","data-saver:11","data-saver:12","font-size:1","font-size:2","font-size:3","font-size:4","settings-search:1","settings-search:2","settings-search:3","settings-search:4","settings-search:5","settings-search:6","settings-search:7"],"lat":{"baseline":[6.34,14.24,5.66,5.05,17.55,7.34,6.03,8.5,5.33,9.08,5.4,3.89,29.05,8.15,17.32,4.76,7.65,6.31,6.29,8.73,8.39,10.57,5.16,9.34,17.39,7.57,11.2,6.63,5.3,5.25,13.74,9.73,3.22,7.3,12.78,14.83,30.57,14.73,16.68,16.06,9.86,5.39,11.85,5.58,7.56,7.8,13.49,12.08,6.11,22.08,8.8,4.15,9.7,5.39,7.25],"B1":[0.45,7.02,0.45,10.18,0.46,0.48,0.45,0.46,0.45,0.47,7.52,0.44,27.38,0.45,0.47,0.43,0.44,0.47,6.64,0.45,0.45,0.43,0.44,0.47,0.54,0.42,0.46,0.45,0.44,0.57,6.28,9.07,0.43,10.43,7.64,10.39,12.23,9.91,7.42,9.38,9.84,0.45,0.43,0.46,0.43,12.41,0.44,0.45,0.44,6.61,0.46,8.75,0.46,6.04,14.06],"B2":[0.47,7.9,0.44,7.08,0.45,0.46,0.44,0.45,0.45,0.45,5.48,0.59,20.91,0.52,0.53,0.44,0.55,0.47,4.37,0.45,0.43,0.45,0.44,0.45,0.45,0.44,0.48,0.43,0.44,0.45,9.62,11.29,0.44,27.56,14.25,10.55,11.61,13.65,9.91,8.35,8.51,0.45,0.45,0.44,6.54,29.39,0.44,0.45,0.43,9.0,0.46,6.16,0.5,6.63,13.85],"B3":[0.44,4.97,0.46,4.94,0.44,0.48,0.43,0.44,0.46,0.47,5.48,0.56,12.68,0.46,0.44,0.45,0.46,0.48,4.98,0.44,0.43,0.44,0.43,0.48,0.48,0.43,0.45,0.43,0.46,0.44,14.91,15.09,0.44,8.75,9.18,7.39,7.25,0.46,18.3,13.9,13.46,0.49,0.47,0.46,8.56,14.62,0.45,0.45,0.45,18.61,0.52,4.59,0.46,6.43,13.56]},"dec":{"B1":["J","L","J","L","J","J","J","J","J","J","L","J","L","J","J","J","J","J","L","J","J","J","J","J","J","J","J","J","J","J","L","L","J","L","L","L","L","L","L","L","L","J","J","J","J","L","J","J","J","L","J","L","J","L","L"],"B2":["J","L","J","L","J","J","J","J","J","J","L","J","L","J","J","J","J","J","L","J","J","J","J","J","J","J","J","J","J","J","L","L","J","L","L","L","L","L","L","L","L","J","J","J","L","L","J","J","J","L","J","L","J","L","L"],"B3":["J","L","J","L","J","J","J","J","J","J","L","J","L","J","J","J","J","J","L","J","J","J","J","J","J","J","J","J","J","J","L","L","J","L","L","L","L","J","L","L","L","J","J","J","L","L","J","J","J","L","J","L","J","L","L"]},"ok":{"baseline":[null,true,true,null,true,true,true,true,true,null,true,true,true,true,true,true,true,true,null,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,null,false,true,true,null,true,true,true,true,true,true,false,true,true,null,true,true,null,true,true,false],"B1":[null,true,true,null,true,true,true,true,true,null,true,true,true,true,true,true,true,true,null,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,null,false,true,true,null,true,true,true,true,true,false,true,true,true,null,true,true,null,true,true,false],"B2":[null,true,true,null,true,true,true,true,true,null,true,true,true,true,true,true,true,true,null,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,null,false,true,true,null,true,true,true,true,true,true,false,true,true,null,true,true,null,true,true,false],"B3":[null,true,true,null,true,true,true,true,true,null,true,true,true,true,true,true,true,true,null,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,null,false,true,false,null,true,true,true,true,true,false,true,true,true,null,true,true,null,true,true,true]}};
+  var NAMES = {"alarm-0730":"알람","alarm-0730-again":"알람 다시","bluetooth":"블루투스","bluetooth-again":"블루투스 다시","brightness":"밝기","data-saver":"데이터 절약","font-size":"글꼴 크기","settings-search":"설정 검색"};
+  var RUNS = [["기존", "baseline"], ["B 1회차", "B1"], ["B 2회차", "B2"], ["B 3회차", "B3"]];
+  var COST = {baseline: 0.37420943, B1: 0.12931314, B2: 0.1313286, B3: 0.11672366};
+  var CALLS = {baseline: 57, B1: 22, B2: 23, B3: 20};
+  var REASONS = [["목록에 없음", 7], ["그 밖", 4], ["직전에 링 못 그림", 4], ["끝남 확신 부족", 3], ["글자 입력", 2]];
+
+  var state;
+  try { state = JSON.parse(document.getElementById("deck-state").textContent); } catch (e) { state = {rev: 0, lastSave: "", slides: []}; }
+  var ui = {mode: "deck", cur: 0, open: null, draft: null, confirm: null, busy: false, readOnly: false, toast: null};
+  var app = document.getElementById("app");
+  var narrowMQ = window.matchMedia ? window.matchMedia("(max-width: 720px)") : {matches: false};
+
+  var ss = {
+    get: function () { try { var v = sessionStorage.getItem(STASH_KEY); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+    set: function (v) { try { sessionStorage.setItem(STASH_KEY, JSON.stringify(v)); } catch (e) {} },
+    clear: function () { try { sessionStorage.removeItem(STASH_KEY); } catch (e) {} }
+  };
+  (function restore() {
+    var st = ss.get();
+    if (!st) return;
+    ss.clear();
+    ui.mode = st.mode || "overview"; ui.cur = st.cur || 0;
+    if (st.saveId && st.saveId === state.lastSave) { ui.toast = {text: "저장했습니다. 이 페이지를 연 모든 사람의 화면에 반영됩니다.", kind: "ok"}; return; }
+    if (st.open && st.draft) {
+      ui.open = st.open; ui.draft = st.draft;
+      ui.toast = {text: "다른 사람이 먼저 저장해서 방금 쓴 내용이 저장되지 않았습니다. 다시 채워 두었으니 확인하고 다시 저장해 주세요.", kind: "warn"};
+    }
+  })();
+
+  var artP = null;
+  function getArt() {
+    if (!artP) artP = (window.claude && typeof window.claude.use === "function") ? window.claude.use("artifact").catch(function () { return null; }) : Promise.resolve(null);
+    return artP;
+  }
+  getArt().then(function (a) { ui.canSave = !!a; if (ui.mode === "overview") render(); });
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]; }); }
+  function inl(s) { return esc(s).split("`").map(function (p, i) { return i % 2 ? "<code>" + p + "</code>" : p; }).join(""); }
+  function sum(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
+  function stepName(i) { var p = D.steps[i].split(":"); return NAMES[p[0]] + " " + p[1] + "단계"; }
+  function totals(run) {
+    var lat = D.lat[run];
+    if (run === "baseline") return {j: 0, l: sum(lat)};
+    var j = 0, l = 0;
+    lat.forEach(function (v, i) { if (D.dec[run][i] === "J") j += v; else l += v; });
+    return {j: j, l: l};
+  }
+  function scoredIdx() { var s = []; D.ok.baseline.forEach(function (v, i) { if (v !== null) s.push(i); }); return s; }
+  function legend() { return '<div class="legend"><span><i class="sw jev"></i>Jev가 답한 단계</span><span><i class="sw llm"></i>LLM이 답한 단계</span></div>'; }
+
+  function strip(run, title, ph) {
+    var MAX = 32, lat = D.lat[run], dec = run === "baseline" ? null : D.dec[run], cols = "";
+    lat.forEach(function (v, i) {
+      var who = dec ? (dec[i] === "J" ? "jev" : "llm") : "llm";
+      cols += '<div class="col" data-tip="' + esc(stepName(i) + " · " + v.toFixed(2) + "초 · " + (who === "jev" ? "Jev" : "LLM")) + '"><div class="bar ' + who + '" style="height:' + Math.max(1.2, v / MAX * 100).toFixed(2) + '%"></div></div>';
+    });
+    var grid = [10, 20, 30].map(function (t) { return '<div class="gl" style="bottom:' + (t / MAX * 100).toFixed(2) + '%"><span>' + t + "초</span></div>"; }).join("");
+    var groups = [], prev = null, n = 0;
+    D.steps.forEach(function (k) { var w = k.split(":")[0]; if (w !== prev) { if (prev) groups.push([prev, n]); prev = w; n = 1; } else n++; });
+    groups.push([prev, n]);
+    var labels = groups.map(function (g) { return '<div class="gname" style="grid-column:span ' + g[1] + '">' + esc(NAMES[g[0]]) + "</div>"; }).join("");
+    return '<figure class="chart"><figcaption class="viz-title">' + esc(title) + '</figcaption><div class="plot" style="--ph:' + ph + 'px">' + grid + '<div class="base"></div><div class="bars">' + cols + '</div></div><div class="gnames">' + labels + "</div></figure>";
+  }
+  function hbars(title, rows, max, fmt, unit, segFn) {
+    var h = '<div class="hchart"><div class="viz-title">' + esc(title) + "</div>";
+    rows.forEach(function (r) {
+      var segs = segFn ? segFn(r) : '<div class="seg llm" style="flex:1" data-tip="' + esc(r[0] + " · " + fmt(r[1]) + unit) + '"></div>';
+      h += '<div class="hrow"><div class="hlab">' + esc(r[0]) + '</div><div class="htrack"><div class="hbar" style="width:calc((100% - 92px) * ' + (r[1] / max).toFixed(4) + ')">' + segs + '</div><div class="hval">' + fmt(r[1]) + unit + "</div></div></div>";
+    });
+    return h + "</div>";
+  }
+
+  var VIS = {
+    cover: function () {
+      return '<div class="tiles">' +
+        '<div class="tile"><div class="k">시간 · 55단계 판단 시간 합계</div><div class="v"><span class="from">546초 →</span> 215~258초</div><div class="s">기존 방식의 39~47%</div></div>' +
+        '<div class="tile"><div class="k">비용 · 회차 하나의 LLM 판단 비용</div><div class="v"><span class="from">0.374 →</span> 0.117~0.131</div><div class="s">단위 unit · 65~69% 줄어듦</div></div>' +
+        '<div class="tile"><div class="k">정확도 · 채점 47단계, 앱 기준</div><div class="v"><span class="from">44 →</span> 44</div><div class="s">세 번 모두 기존과 같음</div></div>' +
+        "</div>";
+    },
+    problem: function () { return strip("baseline", "기존 방식 · 단계 55개의 판단 시간", 230); },
+    jev: function () {
+      return '<div class="viz-title">같은 단계에서 두 방식이 낸 실제 답 · 알람 시간 화면에서 \'30\' 누르기</div><div class="answers">' +
+        '<div class="ans llmc"><div class="ans-head"><span class="who2"><i class="sw llm"></i>기존 LLM</span><span class="sec">6.03초</span></div><div class="ans-k">답 전체를 글로 씁니다</div>' +
+        '<pre>{"memo": "…",\n "explain": "…",\n "action": {\n   "name": "click",\n   "target": 24}}</pre></div>' +
+        '<div class="ans jevc"><div class="ans-head"><span class="who2"><i class="sw jev"></i>Jev</span><span class="sec">0.45초</span></div><div class="ans-k">보기 중에서 고릅니다</div>' +
+        '<dl class="kv"><dt>단계 종류</dt><dd>누르기</dd><dt>동작</dt><dd>click</dd><dt>누를 요소</dt><dd>[24] \'30\'</dd><dt>확신</dt><dd>0.99</dd></dl></div></div>';
+    },
+    flow: function () {
+      var chips = REASONS.map(function (r) { return '<span class="chip">' + esc(r[0]) + "<b>" + r[1] + "</b></span>"; }).join("");
+      return '<div class="flow">' +
+        '<div class="lane"><div class="lane-name">기존 방식</div><div class="chain"><div class="node">화면 상태</div><span class="arr">→</span><div class="node llm">LLM 판단<small>3.2~30.6초</small></div><span class="arr">→</span><div class="node">다음 동작</div></div></div>' +
+        '<div class="lane"><div class="lane-name">B 구성</div><div class="chain"><div class="node">화면 상태</div><span class="arr">→</span><div class="node jev">Jev<small>질문 7개 · 약 0.5초</small></div><span class="arr">→</span><div class="node">규칙 확인</div></div>' +
+        '<div class="branch"><div class="br"><span class="br-k">통과</span><span class="arr">→</span><div class="node jev">Jev의 답</div><span>55단계 중 34~35단계</span></div>' +
+        '<div class="br"><span class="br-k">못 통과</span><span class="arr">→</span><div class="node llm">LLM 판단</div><span>55단계 중 20~21단계</span></div>' +
+        '<div class="chips">' + chips + "</div></div></div></div>";
+    },
+    time: function () {
+      var max = 0, rows = RUNS.map(function (r) { var t = totals(r[1]); max = Math.max(max, t.j + t.l); return [r[0], t.j + t.l, t]; });
+      var h = hbars("55단계 판단 시간 합계", rows, max, function (v) { return String(Math.round(v)); }, "초", function (r) {
+        var t = r[2], s = "";
+        if (t.j) s += '<div class="seg jev" style="width:' + (t.j / r[1] * 100).toFixed(2) + '%" data-tip="' + esc(r[0] + " · Jev가 답한 단계 " + Math.round(t.j) + "초") + '"></div>';
+        return s + '<div class="seg llm" style="flex:1" data-tip="' + esc(r[0] + " · LLM이 답한 단계 " + Math.round(t.l) + "초") + '"></div>';
+      });
+      return h + legend() + strip("B1", "B 1회차 · 단계 55개의 판단 시간", 128);
+    },
+    cost: function () {
+      var c = RUNS.map(function (r) { return [r[0], COST[r[1]]]; }), n = RUNS.map(function (r) { return [r[0], CALLS[r[1]]]; });
+      return hbars("LLM 판단 비용 · 회차 하나", c, COST.baseline, function (v) { return v.toFixed(3); }, " unit") +
+        hbars("LLM 판단 호출 · 회차 하나", n, CALLS.baseline, function (v) { return String(v); }, "회") +
+        '<div class="note-line">새로 드는 Jev 비용: 세 회차 합계 <b>$0.041</b>, 회차 하나에 약 <b>$0.014</b></div>';
+    },
+    accuracy: function () {
+      var S = scoredIdx(), tiles = "", rows = "";
+      RUNS.forEach(function (r, ri) {
+        var ok = D.ok[r[1]], right = S.filter(function (i) { return ok[i]; }).length;
+        tiles += '<div class="tile' + (ri ? " jev-t" : "") + '"><div class="k">' + esc(r[0]) + '</div><div class="v">' + right + ' <span class="from">/ ' + S.length + "</span></div></div>";
+        rows += '<div class="rl">' + esc(r[0]) + "</div>";
+        S.forEach(function (i) { rows += '<div class="cell' + (ok[i] ? "" : " bad") + '" data-tip="' + esc(r[0] + " · " + stepName(i) + " · " + (ok[i] ? "맞음" : "틀림")) + '"></div>'; });
+      });
+      return '<div class="acc-tiles">' + tiles + '</div><div class="viz-title">채점한 47단계 · 칸 하나가 단계 하나</div><div class="acc-scroll"><div class="acc">' + rows + "</div></div>" +
+        '<div class="legend"><span><i class="cell lg"></i>맞음</span><span><i class="cell lg bad"></i>틀림</span></div>';
+    },
+    summary: function () {
+      return '<div class="results">' +
+        '<div class="res"><div class="res-k">시간</div><div class="res-v"><span class="from">546초 →</span> 215~258초</div><div class="res-s">55단계 판단 시간 합계 · 기존의 39~47%</div></div>' +
+        '<div class="res"><div class="res-k">비용</div><div class="res-v"><span class="from">0.374 →</span> 0.117~0.131</div><div class="res-s">회차 하나의 LLM 판단 비용(unit) · 65~69% 줄어듦</div></div>' +
+        '<div class="res"><div class="res-k">정확도</div><div class="res-v"><span class="from">44 →</span> 44 / 47</div><div class="res-s">채점 47단계, 앱 기준 · 세 번 모두 같음</div></div></div>';
+    }
+  };
+
+  /* 모아 보기 화면에서만 보이는 데이터 표 */
+  var TABLES = {
+    time: function () {
+      return "<thead><tr><th>측정</th><th class=\"num\">Jev 단계 시간</th><th class=\"num\">LLM 단계 시간</th><th class=\"num\">합계</th></tr></thead><tbody>" +
+        RUNS.map(function (r) { var t = totals(r[1]); return "<tr><td>" + esc(r[0]) + '</td><td class="num">' + Math.round(t.j) + '초</td><td class="num">' + Math.round(t.l) + '초</td><td class="num">' + Math.round(t.j + t.l) + "초</td></tr>"; }).join("") + "</tbody>";
+    },
+    cost: function () {
+      return "<thead><tr><th>측정</th><th class=\"num\">LLM 판단 비용</th><th class=\"num\">LLM 판단 호출</th></tr></thead><tbody>" +
+        RUNS.map(function (r) { return "<tr><td>" + esc(r[0]) + '</td><td class="num">' + COST[r[1]].toFixed(3) + ' unit</td><td class="num">' + CALLS[r[1]] + "회</td></tr>"; }).join("") + "</tbody>";
+    },
+    accuracy: function () {
+      var S = scoredIdx(), out = [];
+      RUNS.forEach(function (r) { S.forEach(function (i) { if (!D.ok[r[1]][i]) out.push("<tr><td>" + esc(r[0]) + "</td><td>" + esc(stepName(i)) + "</td></tr>"); }); });
+      return "<thead><tr><th>측정</th><th>틀린 단계</th></tr></thead><tbody>" + out.join("") + "</tbody>";
+    },
+    flow: function () {
+      return "<thead><tr><th>LLM에 넘긴 이유 · B 1회차</th><th class=\"num\">단계 수</th></tr></thead><tbody>" +
+        REASONS.map(function (r) { return "<tr><td>" + esc(r[0]) + '</td><td class="num">' + r[1] + "</td></tr>"; }).join("") + "</tbody>";
+    }
+  };
+
+  function stageHTML(sl, i) {
+    var n = state.slides.length, layout = sl.layout || "text";
+    var vis = sl.visual && VIS[sl.visual] ? VIS[sl.visual]() : "";
+    var items = (sl.points || []).map(function (p) { return "<li>" + inl(p) + "</li>"; });
+    (sl.addenda || []).forEach(function (a) { items.push('<li class="add">' + inl(a.text).replace(/\n/g, "<br>") + '<span class="who">' + esc(a.who || "팀원") + "</span></li>"); });
+    var pts = items.length ? '<div class="pts-wrap">' + (sl.pointsLabel ? '<div class="pts-label">' + esc(sl.pointsLabel) + "</div>" : "") + '<ul class="pts">' + items.join("") + "</ul></div>" : "";
+    var v = vis ? '<div class="viz">' + vis + "</div>" : "";
+    var body;
+    if (layout === "summary" || layout === "cover") body = v + pts;
+    else body = pts + v;
+    if (!vis && layout !== "cover") layout = "text";
+    var head = '<div class="s-head"><div class="s-kick"><span class="s-tag">' + esc(sl.by || "[팀원]") + "</span>" + (sl.kicker ? "<span>" + esc(sl.kicker) + "</span>" : "") + "</div>" +
+      '<h2 class="s-title">' + inl(sl.title) + "</h2>" + (sl.lead ? '<p class="s-lead">' + inl(sl.lead) + "</p>" : "") +
+      ((sl.edited || []).length ? '<div class="s-edited">고친 사람: ' + esc(sl.edited.join(", ")) + "</div>" : "") + "</div>";
+    var foot = '<div class="s-foot"><span class="src">' + esc(sl.src || "Jev 채택 · B 구성") + '</span><span class="pg">' + (i + 1) + " / " + n + "</span></div>";
+    return '<div class="stage l-' + layout + '" data-i="' + i + '">' + head + '<div class="s-body">' + body + "</div>" + foot + "</div>";
+  }
+
+  function btn(act, label, extra, cls) {
+    var dis = ui.busy || (ui.readOnly && /^(save|up|down|del)/.test(act));
+    return '<button type="button" class="btn ' + (cls || "") + '" data-act="' + act + '"' + (extra || "") + (dis ? " disabled" : "") + ">" + label + "</button>";
+  }
+  function idAttr(id, k) { return ' data-id="' + esc(id) + '"' + (k != null ? ' data-k="' + k + '"' : ""); }
+
+  function noteForm(sl) {
+    var id = esc(sl.id);
+    return '<form class="form" novalidate><label for="f-note-' + id + '">덧붙일 내용<span class="hint">슬라이드의 항목 맨 끝에 이름과 함께 붙습니다. `코드`처럼 적으면 코드 글꼴로 보입니다.</span></label><textarea id="f-note-' + id + '"></textarea>' +
+      '<label for="f-who-' + id + '">이름<span class="hint">비워 두면 "팀원"으로 적습니다.</span></label><input id="f-who-' + id + '" autocomplete="name">' +
+      '<div class="row">' + btn("save-note", "저장", idAttr(sl.id), "primary") + btn("cancel", "취소") + "</div></form>";
+  }
+  function editForm(sl) {
+    var id = esc(sl.id);
+    return '<form class="form" novalidate><label for="f-title-' + id + '">제목</label><input id="f-title-' + id + '" value="' + esc(sl.title) + '">' +
+      '<label for="f-lead-' + id + '">부제<span class="hint">비워 두면 보이지 않습니다.</span></label><input id="f-lead-' + id + '" value="' + esc(sl.lead || "") + '">' +
+      '<label for="f-points-' + id + '">항목<span class="hint">한 줄에 한 항목입니다. 길면 글자가 작아집니다.</span></label><textarea id="f-points-' + id + '" rows="6">' + esc((sl.points || []).join("\n")) + "</textarea>" +
+      '<label for="f-notes-' + id + '">발표 메모<span class="hint">모아 보기 화면에만 보입니다.</span></label><textarea id="f-notes-' + id + '" rows="3">' + esc(sl.notes || "") + "</textarea>" +
+      '<label for="f-editor-' + id + '">고친 사람<span class="hint">비워 두면 "팀원"으로 적습니다.</span></label><input id="f-editor-' + id + '" autocomplete="name">' +
+      '<div class="row">' + btn("save-edit", "저장", idAttr(sl.id), "primary") + btn("cancel", "취소") + "</div></form>";
+  }
+  function newForm() {
+    return '<form class="form" novalidate><label for="f-new-title">제목</label><input id="f-new-title">' +
+      '<label for="f-new-points">항목<span class="hint">한 줄에 한 항목입니다.</span></label><textarea id="f-new-points" rows="5"></textarea>' +
+      '<label for="f-new-notes">발표 메모</label><textarea id="f-new-notes" rows="3"></textarea>' +
+      '<label for="f-new-who">이름<span class="hint">슬라이드에 [이름]으로 붙습니다. 비워 두면 [팀원]입니다.</span></label><input id="f-new-who" autocomplete="name">' +
+      '<div class="row">' + btn("save-new", "슬라이드 추가", "", "primary") + btn("cancel", "취소") + "</div></form>";
+  }
+
+  function cardHTML(sl, i) {
+    var n = state.slides.length, open = ui.open && ui.open.id === sl.id ? ui.open.kind : null;
+    var meta = "";
+    if (sl.notes) meta += '<details class="notes"><summary>발표 메모</summary><p>' + inl(sl.notes) + "</p></details>";
+    if (sl.visual && TABLES[sl.visual]) meta += '<details class="tv"><summary>데이터 표</summary><div class="tbl-scroll"><table class="tbl">' + TABLES[sl.visual]() + "</table></div></details>";
+    if ((sl.addenda || []).length) {
+      meta += '<div class="adds">' + sl.addenda.map(function (a, k) {
+        var c = ui.confirm && ui.confirm.kind === "note" && ui.confirm.id === sl.id && ui.confirm.k === k;
+        return '<div class="add-item"><b>' + esc(a.who || "팀원") + "</b><span>덧붙인 내용 " + (k + 1) + "</span>" +
+          (c ? '<span class="confirm">이 내용을 지울까요?' + btn("del-note", "지우기", idAttr(sl.id, k), "danger") + btn("cancel", "취소") + "</span>" : btn("ask-del-note", "지우기", idAttr(sl.id, k), "quiet")) + "</div>";
+      }).join("") + "</div>";
+    }
+    if (open === "note") meta += noteForm(sl);
+    if (open === "edit") meta += editForm(sl);
+    var confirmSlide = ui.confirm && ui.confirm.kind === "slide" && ui.confirm.id === sl.id;
+    meta += '<div class="actions">' + btn("show", "이 장부터 발표", idAttr(sl.id)) + btn("open-note", "덧붙이기", idAttr(sl.id)) + btn("open-edit", "고치기", idAttr(sl.id)) + '<span class="spacer"></span>' +
+      (i > 0 ? btn("up", "위로", idAttr(sl.id), "quiet") : "") + (i < n - 1 ? btn("down", "아래로", idAttr(sl.id), "quiet") : "") +
+      (confirmSlide ? '<span class="confirm">이 슬라이드를 지울까요?' + btn("del-slide", "지우기", idAttr(sl.id), "danger") + btn("cancel", "취소") + "</span>" : btn("ask-del-slide", "슬라이드 지우기", idAttr(sl.id), "quiet")) + "</div>";
+    return '<section class="card" id="card-' + esc(sl.id) + '" aria-label="' + (i + 1) + '번 슬라이드"><div class="card-frame"><div class="fit">' + stageHTML(sl, i) + '</div></div><div class="card-meta">' + meta + "</div></section>";
+  }
+
+  function render() {
+    var n = state.slides.length;
+    if (ui.cur > n - 1) ui.cur = Math.max(0, n - 1);
+    document.body.classList.toggle("deck-mode", ui.mode === "deck");
+    var h;
+    if (ui.mode === "deck") {
+      h = '<div class="deck"><div class="deck-area">' + (n ? '<div class="fit">' + stageHTML(state.slides[ui.cur], ui.cur) + "</div>" : "") + "</div>" +
+        '<nav class="dnav" aria-label="슬라이드 이동">' + btn("overview", "모아 보기·편집", "", "quiet") + btn("prev", "이전") + '<span class="pcount">' + (n ? ui.cur + 1 : 0) + " / " + n + "</span>" + btn("next", "다음") +
+        (document.fullscreenEnabled ? btn("full", "전체 화면", "", "quiet") : "") + "</nav></div>";
+    } else {
+      var hint = ui.canSave === false ? " 이 화면에서는 저장할 수 없습니다. claude.ai에서 편집 권한이 있는 계정으로 열면 저장할 수 있습니다." : " 저장하면 이 페이지를 연 모든 사람의 화면에 반영됩니다.";
+      h = '<div class="wrap"><header class="top"><div><div class="eyebrow">해커톤 발표 자료 · 측정일 2026-11-21</div><h1>Jev 채택 · B 구성</h1>' +
+        '<p><span class="tag">[claude]</span> 슬라이드마다 덧붙이기로 항목을 더하거나 고치기로 글을 고칠 수 있습니다.' + esc(hint) + "</p></div>" +
+        '<div class="tools">' + btn("present", "발표 시작", "", "primary") + btn("open-new", "새 슬라이드") + "</div></header>" +
+        state.slides.map(cardHTML).join("") +
+        '<div class="newslide">' + (ui.open && ui.open.kind === "new" ? newForm() : btn("open-new", "+ 새 슬라이드 추가")) + "</div></div>";
+    }
+    if (ui.toast) h += '<div class="toast ' + ui.toast.kind + '" role="status">' + esc(ui.toast.text) + "</div>";
+    app.innerHTML = h;
+    if (ui.open && ui.draft) Object.keys(ui.draft).forEach(function (fid) { var el = document.getElementById(fid); if (el) el.value = ui.draft[fid]; });
+    fitAll();
+  }
+
+  function fitAll() {
+    var narrow = narrowMQ.matches;
+    Array.prototype.forEach.call(app.querySelectorAll(".fit"), function (f) {
+      var st = f.querySelector(".stage");
+      if (!st) return;
+      if (narrow) { f.style.width = ""; f.style.height = ""; st.style.transform = ""; return; }
+      var s;
+      if (ui.mode === "deck") {
+        var area = f.parentElement, cs = getComputedStyle(area);
+        var aw = area.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        var ah = area.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+        s = Math.max(0.1, Math.min(aw / W, ah / H));
+      } else {
+        s = Math.max(0.1, f.parentElement.clientWidth / W);
+      }
+      f.style.width = (W * s) + "px"; f.style.height = (H * s) + "px";
+      st.style.transform = "scale(" + s + ")";
+    });
+    shrinkAll();
+  }
+  /* 팀원이 항목을 많이 덧붙여 넘치면 항목 글자를 조금씩 줄인다 */
+  function shrinkAll() {
+    if (narrowMQ.matches) return;
+    Array.prototype.forEach.call(app.querySelectorAll(".stage"), function (st) {
+      var body = st.querySelector(".s-body"), pts = st.querySelector(".pts");
+      if (!body || !pts) return;
+      pts.style.fontSize = "";
+      var fs = parseFloat(getComputedStyle(pts).fontSize);
+      while (body.scrollHeight > body.clientHeight + 1 && fs > 14) { fs -= 1; pts.style.fontSize = fs + "px"; }
+    });
+  }
+
+  function findSlide(st, id) { for (var i = 0; i < st.slides.length; i++) if (st.slides[i].id === id) return i; return -1; }
+  function val(id) { var el = document.getElementById(id); return el ? el.value : ""; }
+  function captureDraft() {
+    var f = app.querySelector("form.form"), d = {};
+    if (!f) return null;
+    Array.prototype.forEach.call(f.querySelectorAll("input,textarea"), function (el) { d[el.id] = el.value; });
+    return d;
+  }
+  function lines(s) { return s.split("\n").map(function (x) { return x.trim(); }).filter(Boolean); }
+  function addName(list, name) { list = list || []; if (list.indexOf(name) < 0) list.push(name); return list; }
+  var toastTimer = null;
+  function toast(text, kind) {
+    ui.toast = {text: text, kind: kind || "ok"}; render();
+    clearTimeout(toastTimer);
+    if (kind !== "warn") toastTimer = setTimeout(function () { ui.toast = null; render(); }, 4000);
+  }
+
+  function buildDoc(st) {
+    var keep = Array.prototype.map.call(document.querySelectorAll("[data-keep]"), function (el) { return el.outerHTML; }).join("\n");
+    var json = JSON.stringify(st).replace(/</g, "\\u003c");
+    var code = document.getElementById("deck-code").outerHTML;
+    return "<!doctype html><html><head><meta charset=utf8><meta name=viewport content=\"width=device-width,initial-scale=1,viewport-fit=cover\"><style>" + RESET + "</style></head><body>" +
+      keep + "\n<div id=\"app\"></div>\n<script type=\"application/json\" id=\"deck-state\">" + json + "</" + "script>\n" + code + "</body></html>";
+  }
+
+  function commit(mutate, withDraft) {
+    if (ui.busy) return;
+    var draft = withDraft ? captureDraft() : null;
+    var next = JSON.parse(JSON.stringify(state));
+    mutate(next);
+    next.rev = (next.rev || 0) + 1;
+    next.lastSave = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    ss.set({saveId: next.lastSave, open: withDraft ? ui.open : null, draft: draft, mode: ui.mode, cur: ui.cur});
+    ui.busy = true; ui.draft = draft; ui.toast = {text: "저장하는 중입니다…", kind: "ok"}; render();
+    getArt().then(function (art) {
+      if (!art) { ss.clear(); ui.busy = false; toast("이 화면에서는 저장할 수 없습니다. claude.ai에서 편집 권한이 있는 계정으로 열어 주세요.", "warn"); return; }
+      var tries = 0;
+      (function attempt() {
+        tries++;
+        art.publish(buildDoc(next)).then(function () {
+          state = next; ui.open = null; ui.draft = null; ui.confirm = null; ui.busy = false;
+          toast("저장했습니다. 이 페이지를 연 모든 사람의 화면에 반영됩니다.", "ok");
+        }, function (e) {
+          var code = e && e.code;
+          if (code === "upstream_error" && tries < 2) { setTimeout(attempt, 600 + Math.random() * 900); return; }
+          ui.busy = false;
+          if (code === "conflict") { toast("다른 사람이 먼저 저장해서 새 버전을 불러오는 중입니다. 방금 쓴 내용은 다시 채워집니다.", "warn"); return; }
+          ss.clear();
+          if (code === "not_writer" || code === "not_granted") { ui.readOnly = true; toast("보기 전용으로 열려 있어 저장할 수 없습니다. 문서 주인에게 편집 권한을 받아 주세요.", "warn"); }
+          else if (code === "rate_limited") toast("저장이 잠시 막혔습니다. 몇 초 뒤에 다시 저장해 주세요.", "warn");
+          else toast("저장하지 못했습니다(" + (code || "알 수 없는 오류") + "). 잠시 뒤에 다시 저장해 주세요.", "warn");
+        });
+      })();
+    });
+  }
+
+  function focusFirst() { var f = app.querySelector("form.form input, form.form textarea"); if (f) f.focus(); }
+  function setMode(m, cur) {
+    ui.mode = m; if (cur != null) ui.cur = cur; ui.open = null; ui.draft = null; ui.confirm = null; ui.toast = null;
+    render(); window.scrollTo(0, 0);
+    if (m === "overview" && cur != null) { var c = app.querySelectorAll(".card")[cur]; if (c) c.scrollIntoView({block: "start"}); }
+  }
+  function go(d) { var n = state.slides.length; ui.cur = Math.min(n - 1, Math.max(0, ui.cur + d)); render(); }
+
+  app.addEventListener("submit", function (e) { e.preventDefault(); });
+  app.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-act]");
+    if (!b || b.disabled) return;
+    var act = b.getAttribute("data-act"), id = b.getAttribute("data-id"), k = b.hasAttribute("data-k") ? +b.getAttribute("data-k") : null;
+    if (act === "present") setMode("deck", 0);
+    else if (act === "show") setMode("deck", findSlide(state, id));
+    else if (act === "overview") setMode("overview", ui.cur);
+    else if (act === "prev") go(-1);
+    else if (act === "next") go(1);
+    else if (act === "full") { try { var p = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); if (p && p.catch) p.catch(function () {}); } catch (err) {} }
+    else if (act === "open-note" || act === "open-edit") { ui.open = {kind: act === "open-note" ? "note" : "edit", id: id}; ui.draft = null; ui.confirm = null; render(); focusFirst(); }
+    else if (act === "open-new") { ui.open = {kind: "new"}; ui.draft = null; ui.confirm = null; render(); focusFirst(); var nf = app.querySelector(".newslide"); if (nf) nf.scrollIntoView({block: "center"}); }
+    else if (act === "cancel") { ui.open = null; ui.draft = null; ui.confirm = null; render(); }
+    else if (act === "ask-del-slide") { ui.confirm = {kind: "slide", id: id}; render(); }
+    else if (act === "ask-del-note") { ui.confirm = {kind: "note", id: id, k: k}; render(); }
+    else if (act === "save-note") {
+      var text = val("f-note-" + id).trim(), who = val("f-who-" + id).trim();
+      if (!text) { ui.draft = captureDraft(); toast("덧붙일 내용을 적어 주세요.", "warn"); focusFirst(); return; }
+      commit(function (st) { var i = findSlide(st, id); if (i >= 0) { st.slides[i].addenda = st.slides[i].addenda || []; st.slides[i].addenda.push({who: who || "팀원", text: text}); } }, true);
+    }
+    else if (act === "save-edit") {
+      var title = val("f-title-" + id).trim(), lead = val("f-lead-" + id).trim(), pts = lines(val("f-points-" + id)), notes = val("f-notes-" + id).trim(), ed = val("f-editor-" + id).trim();
+      if (!title) { ui.draft = captureDraft(); toast("제목을 적어 주세요.", "warn"); return; }
+      commit(function (st) { var i = findSlide(st, id); if (i < 0) return; var s = st.slides[i]; s.title = title; s.lead = lead; s.points = pts; s.notes = notes; s.edited = addName(s.edited, ed || "팀원"); }, true);
+    }
+    else if (act === "save-new") {
+      var nt = val("f-new-title").trim(), np = lines(val("f-new-points")), nn = val("f-new-notes").trim(), nw = val("f-new-who").trim();
+      if (!nt) { ui.draft = captureDraft(); toast("새 슬라이드의 제목을 적어 주세요.", "warn"); return; }
+      commit(function (st) { st.slides.push({id: "s" + Date.now().toString(36), by: "[" + (nw || "팀원") + "]", kicker: "", layout: "text", title: nt, lead: "", pointsLabel: "", points: np, visual: null, src: "", notes: nn, addenda: [], edited: []}); }, true);
+    }
+    else if (act === "up" || act === "down") {
+      commit(function (st) { var i = findSlide(st, id), j = act === "up" ? i - 1 : i + 1; if (i < 0 || j < 0 || j >= st.slides.length) return; var t = st.slides[i]; st.slides[i] = st.slides[j]; st.slides[j] = t; }, false);
+    }
+    else if (act === "del-slide") commit(function (st) { var i = findSlide(st, id); if (i >= 0) st.slides.splice(i, 1); }, false);
+    else if (act === "del-note") commit(function (st) { var i = findSlide(st, id); if (i >= 0 && st.slides[i].addenda) st.slides[i].addenda.splice(k, 1); }, false);
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (ui.mode !== "deck") return;
+    var t = e.target && e.target.tagName;
+    if (t === "INPUT" || t === "TEXTAREA") return;
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " " || e.key === "Enter") { e.preventDefault(); go(1); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp" || e.key === "Backspace") { e.preventDefault(); go(-1); }
+    else if (e.key === "Home") { e.preventDefault(); ui.cur = 0; render(); }
+    else if (e.key === "End") { e.preventDefault(); ui.cur = state.slides.length - 1; render(); }
+  });
+  window.addEventListener("resize", fitAll);
+  if (narrowMQ.addEventListener) narrowMQ.addEventListener("change", fitAll);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
+
+  var tip = document.createElement("div");
+  tip.className = "tip"; tip.hidden = true; tip.setAttribute("role", "tooltip");
+  document.body.appendChild(tip);
+  function place(e) {
+    var pad = 12, x = e.clientX + pad, y = e.clientY + pad, r = tip.getBoundingClientRect();
+    if (x + r.width > window.innerWidth - 8) x = e.clientX - r.width - pad;
+    if (y + r.height > window.innerHeight - 8) y = e.clientY - r.height - pad;
+    tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+  }
+  document.addEventListener("pointerover", function (e) {
+    var el = e.target.closest && e.target.closest("[data-tip]");
+    if (!el) { tip.hidden = true; return; }
+    tip.textContent = el.getAttribute("data-tip"); tip.hidden = false; place(e);
+  });
+  document.addEventListener("pointermove", function (e) { if (!tip.hidden) place(e); });
+  document.addEventListener("pointerleave", function () { tip.hidden = true; });
+  window.addEventListener("scroll", function () { tip.hidden = true; }, {passive: true});
+
+  render();
+  if (ui.open) focusFirst();
+})();
+</script>
+</body></html>

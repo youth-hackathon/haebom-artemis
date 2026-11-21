@@ -337,6 +337,12 @@ def score(workload: dict, run: int, i: int, req: dict, code: int, body: dict, to
         "violations": violations(body, req.get("screen") or {}) if code == 200 else [],
         "latency_ms": round(took * 1000), "recorded_ms": round(float(turn.get("latency_s") or 0) * 1000),
         "status": code, "source": meta.get("source") or "", "mode": meta.get("mode") or "", "rounds": meta.get("rounds"),
+        # jev 방식: 이 단계를 Jev가 골랐는지(jev) LLM에 넘겼는지(llm), Jev가 고른 보기와 그 확률
+        "decider": meta.get("decider") or "", "jev_choice": (meta.get("jev") or {}).get("choice") or "",
+        "jev_p": (meta.get("jev") or {}).get("p"),
+        # jev 방식의 라우터: 글자 입력이 필요하다고 본 확률과, 그래서 정한 쪽(jev 또는 llm)
+        "jev_typing_p": (meta.get("jev") or {}).get("typing_p"), "jev_route": (meta.get("jev") or {}).get("route") or "",
+        "jev_route_reason": (meta.get("jev") or {}).get("route_reason") or "",
         "model_calls": meta.get("model_calls"), "input_tokens": meta.get("input_tokens"), "output_tokens": meta.get("output_tokens"),
         "cost": meta.get("cost"), "cost_currency": meta.get("cost_currency"), "context": context, "context_diff": context_diff,
     }
@@ -438,6 +444,12 @@ def report(rows: list[dict], repeat: int, detail: bool) -> dict:
         print(f"\n정답 가운데 {overall['by_name']}개는 가리킨 자리가 아니라 요소의 이름이 같아서 맞은 것입니다.")
     if overall["from_saved"]:
         print(f"모델을 부르지 않고 답한 단계: {overall['from_saved']}개")
+    decided = [r for r in rows if r.get("decider") and not r.get("error")]
+    if decided:
+        by_jev = [r for r in decided if r["decider"] == "jev"]
+        scored_jev = [r for r in by_jev if r["scored"]]
+        print(f"\nJev가 고른 단계 {len(by_jev)}개(그중 채점한 {len(scored_jev)}개에서 정답 {sum(1 for r in scored_jev if r['correct'])}개), "
+              f"LLM에 넘긴 단계 {len(decided) - len(by_jev)}개")
     checked = [r for r in rows if r.get("context")]
     if checked:
         n = {k: sum(1 for r in checked if r["context"] == k) for k in ("같음", "요약 글만 다름", "다름")}

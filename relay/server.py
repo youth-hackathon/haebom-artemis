@@ -34,6 +34,7 @@ from pathlib import Path
 
 import artemis_bridge as ab
 import backends
+import jev
 
 HERE = Path(__file__).resolve().parent
 LOG_DIR = Path(os.environ.get("GUIDE_LOG_DIR", HERE / "logs"))
@@ -79,7 +80,9 @@ MAX_INNER_ROUNDS = 3  # explorer / invalid-index loops answered without a round 
 # history) and is always there: a request that says "mode": "baseline" gets it whatever else this server has learned
 # to do. A new way of answering is added here under its own name, next to the baseline and not in place of it; it may
 # call the baseline for what it does not handle. GUIDE_MODE is the mode of a request that names none.
-MODES = ("baseline",)
+#   jev  TypeSafe Jev picks the next action among the screen's options (relay/jev.py). Jev also says whether the step
+#        needs typing; such a step goes to the baseline (GUIDE_JEV_FALLBACK=baseline) or Jev answers it anyway (none)
+MODES = ("baseline", "jev")
 DEFAULT_MODE = os.environ.get("GUIDE_MODE", "baseline")
 if DEFAULT_MODE not in MODES:
     raise SystemExit(f"GUIDE_MODE={DEFAULT_MODE!r}: one of {list(MODES)}")
@@ -194,7 +197,10 @@ class Handler(BaseHTTPRequestHandler):
                              "explorer": EXPLORER_MODEL, "recording": bool(RECORD_DIR),
                              "modes": list(MODES), "default_mode": DEFAULT_MODE,
                              # how the Letsur models are reached: "direct", "gateway" or "missing" (no key set)
-                             "letsur": backends.letsur_route()})
+                             "letsur": backends.letsur_route(),
+                             # the jev mode: whether a Jev key is set ("direct" / "missing") and what answers a step
+                             # Jev cannot
+                             "jev": jev.route(), "jev_fallback": jev.FALLBACK})
         elif self.path.split("?", 1)[0] == "/v1/usage":
             # ?session=<id>: `pending` counts that session's background work only
             query = self.path.partition("?")[2]
@@ -396,40 +402,74 @@ def guide_next(req: dict, trace: dict | None = None) -> tuple[int, dict]:
     helpers: list[dict] = []  # explorer calls of this turn
     rounds: list[dict] = []
     out = None
-    for _ in range(MAX_INNER_ROUNDS):
-        if session is None:
-            content = _with_notes(recorded, current["explorer"])
-        else:
+    jev_info = None  # mode jev: what Jev chose this turn and whether it was used
+    decided = None   # mode jev: (out, action, resolved) when Jev's choice answers the request
+    if mode == "jev":
+        if session is not None:
             with _lock:
-                content = ab.build_content(session, current)
-                if trace is not None and "prompt" not in trace:
-                    trace.update(prompt={"system": system, "content": content}, session=_snapshot(session))
-                if first_prompt is None:
-                    first_prompt = content
+                turns, goal = [dict(t) for t in session["turns"]], session["task"]
+                if trace is not None:
+                    trace.setdefault("session", _snapshot(session))
+        else:  # --replay prompt: the recorded session memory stands in for this server's
+            snap = (replay or {}).get("session") or {}
+            turns, goal = list(snap.get("turns") or []), req.get("task") or snap.get("task", "")
         try:
-            out, meta = call_cli(PLANNER_MODEL, system, content, ab.SCHEMA, effort=PLANNER_EFFORT)
+            d = jev.decide(goal, turns, current, elements, screen.get("xml", ""))
         except Exception as exc:  # noqa: BLE001
-            if session is not None:
-                _log(sid, req, current, None, {"error": str(exc)})
-            return 502, {"error": str(exc)[:300]}
-        metas.append(meta)
-        rounds.append({"role": "planner", "model": PLANNER_MODEL, "effort": PLANNER_EFFORT, "output": out, "meta": meta})
-        action = out.get("action") or {"name": "ask_user", "question": "다음에 무엇을 할지 알려 주세요."}
-        if action.get("name") == "ask_explorer":
-            before = len(helpers)
-            result = _explore(action.get("query", ""), current, elements, helpers)
-            current["explorer"].append(f"{action.get('query')!r}: {result}")
-            rounds.append({"role": "explorer", "model": EXPLORER_MODEL, "query": action.get("query", ""), "result": result,
-                           "meta": helpers[before] if len(helpers) > before else None})
-            continue
-        resolved = ab.resolve_target(action, elements, width, height)
-        if resolved.get("target_error"):
-            current["explorer"].append(f"your {action['name']} was not carried out: {resolved['target_error']}")
-            continue
-        break
+            if jev.FALLBACK == "none":
+                if session is not None:
+                    _log(sid, req, current, None, {"error": str(exc), "mode": mode})
+                return 502, {"error": str(exc)[:300]}
+            jev_info = {"error": str(exc)[:300], "used": False}  # the baseline answers this step
+        else:
+            # who answers (relay/jev.py): a step Jev's answers do not cover goes to the LLM, and
+            # GUIDE_JEV_FALLBACK=none lets Jev answer it anyway when it has an action
+            jmeta = d["meta"]
+            jev_info = {**d["info"], "route": d["route"], "route_reason": d["why"], "used": False, "meta": jmeta}
+            rounds.append({"role": "jev", "model": jmeta["model"], "meta": jmeta, "output": d["info"]})
+            if d["action"] and (d["route"] == "jev" or jev.FALLBACK == "none"):
+                j_resolved = ab.resolve_target(d["action"], elements, width, height)
+                if not j_resolved.get("target_error"):
+                    decided = ({"memo": "", "explain": d["explain"], "action": d["action"]}, d["action"], j_resolved)
+                    jev_info["used"] = True
+
+    if decided is not None:
+        out, action, resolved = decided
     else:
-        resolved = {"name": "ask_user", "question": "화면에서 안내할 곳을 찾지 못했어요. 어떻게 할지 알려 주세요."}
-        action = resolved
+        for _ in range(MAX_INNER_ROUNDS):
+            if session is None:
+                content = _with_notes(recorded, current["explorer"])
+            else:
+                with _lock:
+                    content = ab.build_content(session, current)
+                    if trace is not None and "prompt" not in trace:
+                        trace.update(prompt={"system": system, "content": content}, session=_snapshot(session))
+                    if first_prompt is None:
+                        first_prompt = content
+            try:
+                out, meta = call_cli(PLANNER_MODEL, system, content, ab.SCHEMA, effort=PLANNER_EFFORT)
+            except Exception as exc:  # noqa: BLE001
+                if session is not None:
+                    _log(sid, req, current, None, {"error": str(exc)})
+                return 502, {"error": str(exc)[:300]}
+            metas.append(meta)
+            rounds.append({"role": "planner", "model": PLANNER_MODEL, "effort": PLANNER_EFFORT, "output": out, "meta": meta})
+            action = out.get("action") or {"name": "ask_user", "question": "다음에 무엇을 할지 알려 주세요."}
+            if action.get("name") == "ask_explorer":
+                before = len(helpers)
+                result = _explore(action.get("query", ""), current, elements, helpers)
+                current["explorer"].append(f"{action.get('query')!r}: {result}")
+                rounds.append({"role": "explorer", "model": EXPLORER_MODEL, "query": action.get("query", ""), "result": result,
+                               "meta": helpers[before] if len(helpers) > before else None})
+                continue
+            resolved = ab.resolve_target(action, elements, width, height)
+            if resolved.get("target_error"):
+                current["explorer"].append(f"your {action['name']} was not carried out: {resolved['target_error']}")
+                continue
+            break
+        else:
+            resolved = {"name": "ask_user", "question": "화면에서 안내할 곳을 찾지 못했어요. 어떻게 할지 알려 주세요."}
+            action = resolved
 
     if session is not None:
         with _lock:
@@ -449,6 +489,18 @@ def guide_next(req: dict, trace: dict | None = None) -> tuple[int, dict]:
             "output_tokens": sum(u["output_tokens"] for u in used), "cost": round(sum(u["cost"] for u in used), 8),
             "cost_currency": next((u["cost_currency"] for u in used if u["cost_currency"]), None),
             "source": "model", "mode": mode}
+    if jev_info is not None:
+        # Jev's call is counted in model_calls and latency_s; its tokens and dollars stay apart from the LLM's
+        # (input_tokens, cost in Letsur units) so the two modes' LLM use can be compared as it is
+        jm = jev_info.get("meta")
+        if jm:
+            meta["latency_s"] = round(meta["latency_s"] + jm["latency_s"], 2)
+            meta["model_calls"] += 1
+        meta["decider"] = "jev" if jev_info["used"] else "llm"
+        meta["jev"] = {k: v for k, v in jev_info.items() if k != "meta"}
+        if jm:
+            meta["jev"].update(latency_s=jm["latency_s"], options=jm["options"], cost_usd=jm.get("cost_usd"),
+                               input_tokens=(jm.get("usage") or {}).get("input_tokens"), served_by=jm.get("served_by"))
     if trace is not None:
         trace.update(rounds=rounds, explorer=list(current["explorer"]))
     if (replay or {}).get("return_prompt") and first_prompt is not None:
@@ -481,7 +533,8 @@ def _log(sid, req, current, out, meta):
 def main() -> None:
     srv = ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"[relay] listening on {HOST}:{PORT} profile={PROFILE} planner={PLANNER_MODEL} summary={SUMMARY_MODEL} "
-          f"explorer={EXPLORER_MODEL} modes={list(MODES)} default_mode={DEFAULT_MODE} letsur={backends.letsur_route()}", flush=True)
+          f"explorer={EXPLORER_MODEL} modes={list(MODES)} default_mode={DEFAULT_MODE} letsur={backends.letsur_route()} "
+          f"jev={jev.route()} jev_fallback={jev.FALLBACK} jev_route_p={jev.ROUTE_P}", flush=True)
     if "letsur:" in PLANNER_MODEL and backends.letsur_route() == "missing":
         print("[relay] " + backends.NO_KEY, flush=True)
     srv.serve_forever()

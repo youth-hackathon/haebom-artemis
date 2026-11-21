@@ -86,7 +86,9 @@ MODES = ("baseline", "jev")
 # In the jev mode some steps always go to the LLM, whatever Jev would choose. Jev sees one screen and no history: it
 # cannot tell a goal reached from a screen to tap through, cannot say a task is impossible here, and repeats itself when
 # a screen comes back. So the LLM (which has the history) answers
-#   - the first step of a task (it also says when the task cannot be done on this phone; GUIDE_ENVIRONMENT_FILE)
+#   - the first step of a task that reaches this server, that is a step of a session the LLM has not answered yet (it
+#     also says when the task cannot be done on this phone; GUIDE_ENVIRONMENT_FILE). The first step may have been
+#     answered elsewhere (the manual server sends the person home from the guide app without asking anyone)
 #   - a step on a screen this session has already been on (Jev went round in a circle)
 #   - after GUIDE_JEV_CHECK_EVERY steps in a row answered by Jev (is the task done by now?)
 #   - a step for which Jev's answer is "done" (relay/jev.py): the LLM decides that the task is complete
@@ -410,7 +412,7 @@ def guide_next(req: dict, trace: dict | None = None) -> tuple[int, dict]:
         with _lock:
             session = _sessions.setdefault(sid, {"task": req.get("task", ""), "turns": [], "user_notes": []})
             if req.get("event") == "start":
-                session.update(task=req.get("task", session["task"]), turns=[], user_notes=[], seen=[], jev_run=0)
+                session.update(task=req.get("task", session["task"]), turns=[], user_notes=[], seen=[], jev_run=0, llm_turns=0)
             if req.get("event") == "user_message":
                 session["user_notes"].append(req.get("event_detail", ""))
             forced = (replay or {}).get("previous")
@@ -436,7 +438,7 @@ def guide_next(req: dict, trace: dict | None = None) -> tuple[int, dict]:
     to_llm = ""  # mode jev: why this step goes to the LLM without asking Jev
     if mode == "jev" and session is not None:
         with _lock:
-            if JEV_LLM_START and current["event"] == "start":
+            if JEV_LLM_START and not session.get("llm_turns"):
                 to_llm = "first_step"
             elif JEV_LLM_REPEAT and key in session.get("seen", []):
                 to_llm = "screen_seen_before"
@@ -521,6 +523,8 @@ def guide_next(req: dict, trace: dict | None = None) -> tuple[int, dict]:
             })
             session.setdefault("seen", []).append(key)
             session["jev_run"] = session.get("jev_run", 0) + 1 if (jev_info or {}).get("used") else 0
+            if not (jev_info or {}).get("used"):
+                session["llm_turns"] = session.get("llm_turns", 0) + 1
     used = [backends.tokens(m) for m in metas + helpers]
     meta = {"rounds": len(metas), "latency_s": round(sum(m["latency_s"] for m in metas + helpers), 2),
             "cost_usd": round(sum((m.get("cost_usd") or 0) for m in metas), 5), "elements": len(elements),

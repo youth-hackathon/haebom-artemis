@@ -1,0 +1,35 @@
+# 해봄 artemis 서버를 로컬에서 띄운다: docker compose up -d --build artemis   →  http://127.0.0.1:8765
+# 에뮬레이터나 USB로 연결한 폰에서는 adb reverse tcp:8765 tcp:8765 으로 닿는다.
+services:
+  artemis:
+    build:
+      context: .
+      dockerfile: relay/Dockerfile
+    # 모델 키는 relay/.env 에서 읽는다(relay/.env.example 을 복사해 자기 키를 넣는다). 이미지에는 들어가지 않는다.
+    env_file:
+      - path: relay/.env
+        required: false
+    # Docker의 내장 DNS가 간헐적으로 실패한 적이 있어(Name or service not known) 공개 DNS를 직접 쓴다
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    environment:
+      # artemis: artemis의 기본 모델을 Letsur로 부른다(베이스라인). luna, haiku 도 있다(relay/server.py)
+      GUIDE_PROFILE: ${GUIDE_PROFILE:-artemis}
+      # 답하는 방식의 기본값. baseline은 요청에 "mode": "baseline"을 적으면 언제나 고를 수 있다
+      GUIDE_MODE: ${GUIDE_MODE:-baseline}
+      # 모델 호출 하나를 기다리는 시간(초). 끊기거나 넘기면 한 번 더 부른다. 앱은 응답을 120초까지 기다린다
+      GUIDE_CLI_TIMEOUT: ${GUIDE_CLI_TIMEOUT:-55}
+      # 단계 요약을 동시에 몇 개까지 만드는지. artemis의 값은 2다
+      GUIDE_SUMMARY_WORKERS: ${GUIDE_SUMMARY_WORKERS:-2}
+      # /workloads 로 주면 단계마다 요청(화면 XML, 스크린샷), 모델에 보낸 프롬프트, 응답이 bench/workloads/ 에 세션마다 파일로 남는다
+      GUIDE_RECORD_DIR: ${GUIDE_RECORD_DIR:-}
+      GUIDE_LOG_SHOTS: "off"
+    ports:
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - artemis-data:/data
+      - ./bench/workloads:/workloads
+
+volumes:
+  artemis-data:
